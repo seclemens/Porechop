@@ -25,7 +25,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from collections import defaultdict
 from .misc import load_fasta_or_fastq, print_table, red, bold_underline, MyHelpFormatter, int_to_str
 from .adapters import ADAPTERS, make_full_native_barcode_adapter,\
-    make_old_full_rapid_barcode_adapter, make_new_full_rapid_barcode_adapter
+    make_old_full_rapid_barcode_adapter, make_new_full_rapid_barcode_adapter, Adapter
 from .nanopore_read import NanoporeRead
 from .version import __version__
 
@@ -34,20 +34,25 @@ def main():
     args = get_arguments()
     reads, check_reads, read_type = load_reads(args.input, args.verbosity, args.print_dest,
                                                args.check_reads)
+    
+    if args.adapter_forward is not None or args.adapter_reverse is not None:
+        matching_sets = [Adapter('Custom Barcoding', start_sequence=('start',args.adapter_forward), end_sequence=('end', args.adapter_reverse))]
+        forward_or_reverse_barcodes = None # can be ignored because we dont use barcode binning
+    else:
 
-    matching_sets = find_matching_adapter_sets(check_reads, args.verbosity, args.end_size,
+        matching_sets = find_matching_adapter_sets(check_reads, args.verbosity, args.end_size,
                                                args.scoring_scheme_vals, args.print_dest,
                                                args.adapter_threshold, args.threads)
-    matching_sets = fix_up_1d2_sets(matching_sets)
+        matching_sets = fix_up_1d2_sets(matching_sets)
 
-    if args.barcode_dir:
-        forward_or_reverse_barcodes = choose_barcoding_kit(matching_sets, args.verbosity,
+        if args.barcode_dir:
+            forward_or_reverse_barcodes = choose_barcoding_kit(matching_sets, args.verbosity,
                                                            args.print_dest)
-    else:
-        forward_or_reverse_barcodes = None
+        else:
+            forward_or_reverse_barcodes = None
 
-    display_adapter_set_results(matching_sets, args.verbosity, args.print_dest)
-    matching_sets = add_full_barcode_adapter_sets(matching_sets)
+        display_adapter_set_results(matching_sets, args.verbosity, args.print_dest)
+        matching_sets = add_full_barcode_adapter_sets(matching_sets)
 
     if args.verbosity > 0:
         print('\n', file=args.print_dest)
@@ -107,6 +112,8 @@ def get_arguments():
                                  'a file and stderr if reads are printed to stdout')
     main_group.add_argument('-t', '--threads', type=int, default=default_threads,
                             help='Number of threads to use for adapter alignment')
+    main_group.add_argument('--adapter_forward', help="specific forward adapter; ignores the rest of the matching_sets")
+    main_group.add_argument('--adapter_reverse', help="specific reverse adapter; ifnores the rest of the matching_sets")
 
     barcode_group = parser.add_argument_group('Barcode binning settings',
                                               'Control the binning of reads based on barcodes '
