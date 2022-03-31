@@ -36,7 +36,10 @@ def main():
                                                args.check_reads)
     
     if args.adapter_forward is not None or args.adapter_reverse is not None:
-        matching_sets = [Adapter('Custom Barcoding', start_sequence=('start',args.adapter_forward), end_sequence=('end', args.adapter_reverse))]
+        adapters_forward = args.adapter_forward.split("-")
+        adapters_reverse = args.adapter_reverse.split("-")
+        
+        matching_sets = [Adapter('Custom Barcoding', start_sequence=('start',forward), end_sequence=('end', reverse)) for forward, reverse in zip(adapters_forward,adapters_reverse)]
         forward_or_reverse_barcodes = None # can be ignored because we dont use barcode binning
     else:
 
@@ -112,8 +115,8 @@ def get_arguments():
                                  'a file and stderr if reads are printed to stdout')
     main_group.add_argument('-t', '--threads', type=int, default=default_threads,
                             help='Number of threads to use for adapter alignment')
-    main_group.add_argument('--adapter_forward', help="specific forward adapter; ignores the rest of the matching_sets")
-    main_group.add_argument('--adapter_reverse', help="specific reverse adapter; ifnores the rest of the matching_sets")
+    main_group.add_argument('--adapter_forward', help="specific forward adapter; ignores the rest of the matching_sets; delimit multiple adapters with -")
+    main_group.add_argument('--adapter_reverse', help="specific reverse adapter; ignores the rest of the matching_sets; delimit multiple adapters with -")
 
     barcode_group = parser.add_argument_group('Barcode binning settings',
                                               'Control the binning of reads based on barcodes '
