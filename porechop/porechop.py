@@ -83,7 +83,7 @@ def main():
     output_reads(reads, args.format, args.output, read_type, args.verbosity,
                  args.discard_middle, args.min_split_read_size, args.print_dest,
                  args.barcode_dir, args.input, args.untrimmed, args.threads,
-                 args.discard_unassigned, args.tail_crop, args.trimmed_only, args.min_length)
+                 args.discard_unassigned, args.tail_crop, args.trimmed_only, args.min_length, args.head_crop, args.max_length)
 
 
 def get_arguments():
@@ -118,7 +118,9 @@ def get_arguments():
     main_group.add_argument('--adapter_reverse', help="specific reverse adapter; ignores the rest of the matching_sets; delimit multiple adapters with -")
     main_group.add_argument('--trimmed_only', choices=['true','false'], default='true')
     main_group.add_argument('--tail_crop', type=int, default=0)
+    main_group.add_argument('--head_crop', type=int, default=0)
     main_group.add_argument('--min_length', type=int, default=0)
+    main_group.add_argument('--max_length', type=int, default=1000000)
 
     barcode_group = parser.add_argument_group('Barcode binning settings',
                                               'Control the binning of reads based on barcodes '
@@ -618,7 +620,7 @@ def display_read_middle_trimming_summary(reads, discard_middle, verbosity, print
 
 def output_reads(reads, out_format, output, read_type, verbosity, discard_middle,
                  min_split_size, print_dest, barcode_dir, input_filename,
-                 untrimmed, threads, discard_unassigned, tail_crop, trimmed_only, min_length):
+                 untrimmed, threads, discard_unassigned, tail_crop, trimmed_only, min_length, head_crop, max_length):
     if verbosity > 0:
         trimmed_or_untrimmed = 'untrimmed' if untrimmed else 'trimmed'
         if barcode_dir is not None:
@@ -673,9 +675,9 @@ def output_reads(reads, out_format, output, read_type, verbosity, discard_middle
             if discard_unassigned and barcode_name == 'none':
                 continue
             if out_format == 'fasta':
-                read_str = read.get_fasta(min_split_size, discard_middle, untrimmed, tail_crop, trimmed_only, min_length)
+                read_str = read.get_fasta(min_split_size, discard_middle, untrimmed, tail_crop, trimmed_only, min_length, head_crop, max_length)
             else:
-                read_str = read.get_fastq(min_split_size, discard_middle, untrimmed, tail_crop, trimmed_only, min_length)
+                read_str = read.get_fastq(min_split_size, discard_middle, untrimmed, tail_crop, trimmed_only, min_length, head_crop, max_length)
             if not read_str:
                 continue
             if barcode_name not in barcode_files:
@@ -719,7 +721,7 @@ def output_reads(reads, out_format, output, read_type, verbosity, discard_middle
     elif output is None:
         for read in reads:
             read_str = read.get_fasta(min_split_size, discard_middle, False, tail_crop, trimmed_only, min_length) if out_format == 'fasta' \
-                else read.get_fastq(min_split_size, discard_middle, False, tail_crop, trimmed_only, min_length)
+                else read.get_fastq(min_split_size, discard_middle, False, tail_crop, trimmed_only, min_length, head_crop, max_length)
             print(read_str, end='')
         if verbosity > 0:
             print('Done', flush=True, file=print_dest)
@@ -733,7 +735,7 @@ def output_reads(reads, out_format, output, read_type, verbosity, discard_middle
         with open(out_filename, 'wt') as out:
             for read in reads:
                 read_str = read.get_fasta(min_split_size, discard_middle, False, tail_crop, trimmed_only, min_length) if out_format == 'fasta' \
-                    else read.get_fastq(min_split_size, discard_middle, False, tail_crop, trimmed_only, min_length)
+                    else read.get_fastq(min_split_size, discard_middle, False, tail_crop, trimmed_only, min_length, head_crop, max_length)
                 out.write(read_str)
         if gzipped_out:
             subprocess.check_output(gzip_command + ' -c ' + out_filename + ' > ' + output,

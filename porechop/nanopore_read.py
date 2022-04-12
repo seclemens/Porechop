@@ -94,15 +94,17 @@ class NanoporeRead(object):
         split_read_parts = [x for x in split_read_parts if len(x[0]) >= min_split_read_size]
         return split_read_parts
 
-    def get_fasta(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500):
+    def get_fasta(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000):
         if not self.middle_trim_positions:
             if untrimmed:
                 seq = self.seq
             else:
                 seq = self.get_seq_with_start_end_adapters_trimmed()
-                if tail_crop > 0:
-                    seq = seq[:-tail_crop]
-            if not seq or (len(seq)+tail_crop >= len(self.seq) and trimmed_only == "true") or len(seq) > min_length:  # Don't return empty sequences
+            if tail_crop > 0:
+                seq = seq[head_crop:-tail_crop]
+            else:
+                seq = seq[head_crop:]
+            if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) > min_length or len(seq) > max_length:  # Don't return empty sequences
                 return ''
             if self.rna:
                 seq = seq.replace('T', 'U')
@@ -117,15 +119,17 @@ class NanoporeRead(object):
                     return ''
                 seq = add_line_breaks_to_sequence(split_read_part[0], 70)
                 if tail_crop > 0:
-                    seq = seq[:-tail_crop]
-                if not seq or (len(seq)+tail_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length:  # Don't return empty sequences
+                    seq = seq[head_crop:-tail_crop]
+                else:
+                    seq = seq[head_crop:]
+                if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                     return ''
                 if self.rna:
                     seq = seq.replace('T', 'U')
                 fasta_str += ''.join(['>', read_name, '\n', seq])
             return fasta_str
 
-    def get_fastq(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500):
+    def get_fastq(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000):
         if not self.middle_trim_positions:
             if untrimmed:
                 seq = self.seq
@@ -133,10 +137,13 @@ class NanoporeRead(object):
             else:
                 seq = self.get_seq_with_start_end_adapters_trimmed()
                 quals = self.get_quals_with_start_end_adapters_trimmed()
-                if tail_crop > 0:
-                    seq = seq[:-tail_crop]
-                    quals = quals[:-tail_crop]
-            if not seq or (len(seq)+tail_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length:  # Don't return empty sequences
+            if tail_crop > 0:
+                seq = seq[head_crop:-tail_crop]
+                quals = quals[head_crop:-tail_crop]
+            else:
+                seq = seq[head_crop:]
+                quals = quals[head_crop:]
+            if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                 return ''
             if self.rna:
                 seq = seq.replace('T', 'U')
@@ -148,9 +155,13 @@ class NanoporeRead(object):
             for i, split_read_part in enumerate(self.get_split_read_parts(min_split_read_size)):
                 read_name = add_number_to_read_name(self.name, i + 1)
                 seq, qual = split_read_part[0], split_read_part[1]
-                seq = seq[:-tail_crop]
-                qual = qual[:-tail_crop]
-                if not seq or (len(seq)+tail_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length:  # Don't return empty sequences
+                if tail_crop > 0:
+                    seq = seq[head_crop:-tail_crop]
+                    qual = qual[head_crop:-tail_crop]
+                else:
+                    seq = seq[head_crop:]
+                    qual = qual[head_crop:]
+                if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                     return ''
                 if self.rna:
                     seq = seq.replace('T', 'U')
