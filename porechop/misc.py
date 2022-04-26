@@ -356,3 +356,6 @@ class MyHelpFormatter(argparse.HelpFormatter):
                 action.default is not None:
             help_text += ' (default: ' + str(action.default) + ')'
         return help_text
+
+def reverse_complement(sequence):
+    return sequence.translate(str.maketrans('ACGTacgtRYMKrymkVBHDvbhdNn', 'TGCAtgcaYRKMyrkmBVDHbvdhNn'))[::-1]

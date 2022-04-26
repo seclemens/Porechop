@@ -33,7 +33,7 @@ class Adapter(object):
         return self.name.startswith('Barcode ')
 
     def barcode_direction(self):
-        if '_rev' in self.start_sequence[0]:
+        if '_rev' in self.start_sequence[0] or self.name.endswith("reverse"):
             return 'reverse'
         else:
             return 'forward'

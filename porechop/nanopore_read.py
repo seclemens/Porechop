@@ -15,7 +15,7 @@ not, see <http://www.gnu.org/licenses/>.
 """
 
 from .cpp_function_wrappers import adapter_alignment
-from .misc import yellow, red, add_line_breaks_to_sequence, END_FORMATTING, RED, YELLOW
+from .misc import yellow, red, add_line_breaks_to_sequence, END_FORMATTING, RED, YELLOW, reverse_complement
 
 
 class NanoporeRead(object):
@@ -51,6 +51,8 @@ class NanoporeRead(object):
         self.second_best_start_barcode = ('none', 0.0)
         self.second_best_end_barcode = ('none', 0.0)
         self.barcode_call = 'none'
+        
+        self.needs_reversing = False
 
         self.albacore_barcode_call = None
 
@@ -94,7 +96,7 @@ class NanoporeRead(object):
         split_read_parts = [x for x in split_read_parts if len(x[0]) >= min_split_read_size]
         return split_read_parts
 
-    def get_fasta(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000):
+    def get_fasta(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000, correct_read_direction=False):
         if not self.middle_trim_positions:
             if untrimmed:
                 seq = self.seq
@@ -106,6 +108,8 @@ class NanoporeRead(object):
                 seq = seq[head_crop:]
             if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) > min_length or len(seq) > max_length:  # Don't return empty sequences
                 return ''
+            if correct_read_direction and self.needs_reversing:
+                seq = reverse_complement(seq)
             if self.rna:
                 seq = seq.replace('T', 'U')
             return ''.join(['>', self.name, '\n', add_line_breaks_to_sequence(seq, 70)])
@@ -129,7 +133,7 @@ class NanoporeRead(object):
                 fasta_str += ''.join(['>', read_name, '\n', seq])
             return fasta_str
 
-    def get_fastq(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000):
+    def get_fastq(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000, correct_read_direction=False):
         if not self.middle_trim_positions:
             if untrimmed:
                 seq = self.seq
@@ -145,6 +149,9 @@ class NanoporeRead(object):
                 quals = quals[head_crop:]
             if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                 return ''
+            if correct_read_direction and self.needs_reversing:
+                seq = reverse_complement(seq)
+                quals = quals[::-1]
             if self.rna:
                 seq = seq.replace('T', 'U')
             return ''.join(['@', self.name, '\n', seq, '\n+\n', quals, '\n'])
@@ -186,7 +193,7 @@ class NanoporeRead(object):
             adapter_set.best_end_score = max(adapter_set.best_end_score, score)
 
     def find_start_trim(self, adapters, end_size, extra_trim_size, end_threshold,
-                        scoring_scheme_vals, min_trim_size, check_barcodes, forward_or_reverse):
+                        scoring_scheme_vals, min_trim_size, check_barcodes, forward_or_reverse, correct_read_direction):
         """
         Aligns one or more adapter sequences and possibly adjusts the read's start trim amount based
         on the result.
@@ -203,12 +210,13 @@ class NanoporeRead(object):
                 self.start_trim_amount = max(self.start_trim_amount, trim_amount)
                 self.start_adapter_alignments.append((adapter, full_score, partial_score,
                                                       read_start, read_end))
-            if check_barcodes and adapter.is_barcode() and \
-                    adapter.barcode_direction() == forward_or_reverse:
+            if (check_barcodes and adapter.is_barcode() and \
+                    adapter.barcode_direction() == forward_or_reverse) or correct_read_direction:
                 self.start_barcode_scores[adapter.get_barcode_name()] = full_score
+            
 
     def find_end_trim(self, adapters, end_size, extra_trim_size, end_threshold,
-                      scoring_scheme_vals, min_trim_size, check_barcodes, forward_or_reverse):
+                      scoring_scheme_vals, min_trim_size, check_barcodes, forward_or_reverse, correct_read_direction):
         """
         Aligns one or more adapter sequences and possibly adjusts the read's end trim amount based
         on the result.
@@ -225,8 +233,8 @@ class NanoporeRead(object):
                 self.end_trim_amount = max(self.end_trim_amount, trim_amount)
                 self.end_adapter_alignments.append((adapter, full_score, partial_score,
                                                     read_start, read_end))
-            if check_barcodes and adapter.is_barcode() and \
-                    adapter.barcode_direction() == forward_or_reverse:
+            if (check_barcodes and adapter.is_barcode() and \
+                    adapter.barcode_direction() == forward_or_reverse) or correct_read_direction:
                 self.end_barcode_scores[adapter.get_barcode_name()] = full_score
 
     def find_middle_adapters(self, adapters, middle_threshold, extra_middle_trim_good_side,
@@ -418,7 +426,7 @@ class NanoporeRead(object):
             results += self.formatted_middle_seq() + '\n'
         return results
 
-    def determine_barcode(self, barcode_threshold, barcode_diff, require_two_barcodes):
+    def determine_barcode(self, barcode_threshold, barcode_diff, require_two_barcodes, correct_read_direction):
         """
         This function works through the logic of choosing a barcode for the read based on the
         settings and the read's barcode alignments. It stores its result in self.barcode_call.
@@ -487,6 +495,9 @@ class NanoporeRead(object):
 
         except AssertionError:
             self.barcode_call = 'none'
+
+        if correct_read_direction and self.barcode_call.endswith('reverse'):
+            self.needs_reversing = True
 
         # If the read has been binned by Albacore, then Porechop and Albacore must agree on the
         # barcode. If they don't, the read is unclassified.
