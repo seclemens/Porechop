@@ -96,7 +96,7 @@ class NanoporeRead(object):
         split_read_parts = [x for x in split_read_parts if len(x[0]) >= min_split_read_size]
         return split_read_parts
 
-    def get_fasta(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000, correct_read_direction=False):
+    def get_fasta(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=0, trimmed_only=False, min_length=0, head_crop=0, max_length=1000000, correct_read_direction=False):
         if not self.middle_trim_positions:
             if untrimmed:
                 seq = self.seq
@@ -106,7 +106,7 @@ class NanoporeRead(object):
                 seq = seq[head_crop:-tail_crop]
             else:
                 seq = seq[head_crop:]
-            if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) > min_length or len(seq) > max_length:  # Don't return empty sequences
+            if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only) or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                 return ''
             if correct_read_direction and self.needs_reversing:
                 seq = reverse_complement(seq)
@@ -126,14 +126,14 @@ class NanoporeRead(object):
                     seq = seq[head_crop:-tail_crop]
                 else:
                     seq = seq[head_crop:]
-                if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
+                if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only) or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                     return ''
                 if self.rna:
                     seq = seq.replace('T', 'U')
                 fasta_str += ''.join(['>', read_name, '\n', seq])
             return fasta_str
 
-    def get_fastq(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=60, trimmed_only="true", min_length=500, head_crop=60, max_length=1000000, correct_read_direction=False):
+    def get_fastq(self, min_split_read_size, discard_middle, untrimmed=False, tail_crop=0, trimmed_only=False, min_length=0, head_crop=0, max_length=1000000, correct_read_direction=False):
         if not self.middle_trim_positions:
             if untrimmed:
                 seq = self.seq
@@ -147,7 +147,7 @@ class NanoporeRead(object):
             else:
                 seq = seq[head_crop:]
                 quals = quals[head_crop:]
-            if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
+            if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only) or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                 return ''
             if correct_read_direction and self.needs_reversing:
                 seq = reverse_complement(seq)
@@ -168,7 +168,7 @@ class NanoporeRead(object):
                 else:
                     seq = seq[head_crop:]
                     qual = qual[head_crop:]
-                if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only == "true") or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
+                if not seq or (len(seq)+tail_crop+head_crop >= len(self.seq) and trimmed_only) or len(seq) < min_length or len(seq) > max_length:  # Don't return empty sequences
                     return ''
                 if self.rna:
                     seq = seq.replace('T', 'U')

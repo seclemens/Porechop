@@ -4,6 +4,10 @@ Porechop is a tool for finding and removing adapters from [Oxford Nanopore](http
 
 Porechop also supports demultiplexing of Nanopore reads that were barcoded with the [Native Barcoding Kit](https://store.nanoporetech.com/native-barcoding-kit-1d.html), [PCR Barcoding Kit](https://store.nanoporetech.com/pcr-barcoding-kit-96.html) or [Rapid Barcoding Kit](https://store.nanoporetech.com/rapid-barcoding-sequencing-kit.html).
 
+### May 2022 update: added various options
+
+Added options like [cropping and filtering](#cropping-and-filtering), [custom adapters](#custom-adapters) and [reversing sequences](#reversing-sequences).
+See also [Quick usage examples](#quick-usage-examples) for usage of the new options. These options are specifically for the Trimming Portion and are not tested for the Demultiplexing Portion. 
 
 ### Oct 2018 update: Porechop is officially unsupported
 
@@ -29,6 +33,9 @@ While I'm happy Porechop has so many users, it has always been a bit klugey and 
     * [Barcode demultiplexing with Albacore](#barcode-demultiplexing-with-albacore)
     * [Output](#output)
     * [Verbose output](#verbose-output)
+    * [Cropping and Filtering](#cropping-and-filtering)
+    * [Custom Adapters](#custom-adapters)
+    * [Reversing sequences](#reversing-sequences)
 * [Known adapters](#known-adapters)
 * [Full usage](#full-usage)
 * [Known issues](#known-issues)
@@ -107,6 +114,18 @@ __More verbose output:__<br>
 
 __Got a big server?__<br>
 `porechop -i input_reads.fastq.gz -o output_reads.fastq.gz --threads 40`
+
+__Want to use one or more custom adapter?__<br>
+`porechop -i input_reads.fastq -o output_reads.fastq --custom_adapter ATCGCCTACCGTGACAAGAAAGTTGTCGGTGTCTTTGTGAGAGTTTGATCMTGGCTCAG CTGAGCCAKGACAAACTCTCACAAAGACACCGACAACTTTCTTGTCACGGTAGGCGAT Custom_Barcoding_1 --custom_adapter ATCGCCTACCGTGACAAGAAAGTTGTCGGTGTCTTTGTGCGGTTACCTTGTTACGACTT AAGTCGTAACAAGGTAACCGCACAAAGACACCGACAACTTTCTTGTCACGGTAGGCG Custom_Barcoding_2`
+
+__Want to crop the sequence start or end and keep only sequences of a specific length?__<br>
+`porechop -i input_reads.fastq -o output_reads.fastq --tail_crop=100 --head_crop=100 --min_length=1000 --max_length=2000`
+
+__Want reverse the reverse sequences?__<br>
+`porechop -i input_reads.fastq -o output_reads.fastq --custom_adapter ATCGCCTACCGTGACAAGAAAGTTGTCGGTGTCTTTGTGCGGTTACCTTGTTACGACTT AAGTCGTAACAAGGTAACCGCACAAAGACACCGACAACTTTCTTGTCACGGTAGGCG Custom_Barcoding_reverse --correct_read_direction`
+
+__Want to keep *ONLY* sequences that were trimmed?__<br>
+`porechop -i input_reads.fastq -o output_reads.fastq --trimmed_only`
 
 
 
@@ -215,6 +234,24 @@ The same colour scheme is used for middle adapters, but only reads with a positi
 
 <p align="center"><img src="misc/middle_adapters.png" alt="Middle adapters"></p>
 
+### Cropping and Filtering
+
+Previously it was only possible to cut additional bases from the end of the sequence with the `--extra-end-trim` Parameter. The new options `--head_crop` resp. `--tail_crop` lets you specify the amount of additional bases that should be cut from start resp. end of the sequence after trimming. Currently this is additionally to the existing `--extra-end-trim` Parameter for the end of the sequence. The Default for the `--extra-end-trim` was changed from 2 to 0. Middle adapters are unaffected by this.
+
+With the options `--min_length` resp. `--max_length` you can specify to only keep sequences (after trimming and cropping) that are at least `--min_length` long resp. at most `--max-length` long. Sequences not satisfying these restrictions are discarded. Middle adapters *are* affected by this.
+
+With the option `--trimmed-only` you can specify to only keep sequences that had their adapters removed. This basically checks if the sequence after trimming plus the cropping is larger or equal than the starting sequence. The rest is discarded.
+
+### Custom Adapters
+
+Previously Porechop would try to match adapters using a hardcoded list of adapters. Updating this list would always require an update to porechop. While this option still exists its now also possible to specify Adapters via the parameter `--custom_adapter`. These options takes a list of three arguments forming the adapter: start-adapter, end-adapter, name. You can append multiple `--custom_adapter` options. The Barcodes need to be supplied with the their Primers attached.
+
+Using this disables Porechops automatic adapter search. 
+
+### Reversing sequences
+
+(Not checked with the hardcoded adapters.)
+If your custom adapters name for an adapter ends in *reverse* it is marked as being the reverse read. Using the option `correct_read_direction` Porechop will save the reverse complement of the trimmed sequence.
 
 
 # Known adapters
@@ -266,6 +303,21 @@ Main options:
                                  stderr if reads are printed to stdout (default: 1)
   -t THREADS, --threads THREADS  Number of threads to use for adapter alignment (default: 8)
 
+  --custom_adapter START_ADAPTER END_ADAPTER NAME
+                                 specify custom adapter consisting of start-adapter; end-adapter and a name.
+
+  --correct_read_direction       tries to correct read direction for reverse reads. [ONLY IF custom_adapter name ends in 'rev']
+
+  --trimmed_only                 using this option discards all reads that were not trimmed
+
+  --tail_crop TAIL_CROP          Number of additional bases to be cut from start of sequence after trimming (default: 0)
+
+  --head_crop HEAD_CROP          Number of additional bases to be cut from end of sequence after trimming (default: 0)
+
+  --min_length MIN_LENGTH        Trimmed Sequences need to be at least MIN_LENGTH to be kept and are discarded otherwise (default: 0)
+
+  --max_length MAX_LENGTH        Trimmed Sequences need to be at most MAX_LENGTH to be kept and are discarded otherwise (default: sys.maxsize()) 
+
 Barcode binning settings:
   Control the binning of reads based on barcodes (i.e. barcode demultiplexing)
 
@@ -306,7 +358,7 @@ End adapter settings:
   --min_trim_size MIN_TRIM_SIZE  Adapter alignments smaller than this will be ignored (default: 4)
   --extra_end_trim EXTRA_END_TRIM
                                  This many additional bases will be removed next to adapters found
-                                 at the ends of reads (default: 2)
+                                 at the ends of reads (default: 0)
   --end_threshold END_THRESHOLD  Adapters at the ends of reads must have at least this percent
                                  identity to be removed (0 to 100) (default: 75.0)
 

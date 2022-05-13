@@ -35,15 +35,9 @@ def main():
     reads, check_reads, read_type = load_reads(args.input, args.verbosity, args.print_dest,
                                                args.check_reads)
     
-    if args.adapter_forward is not None or args.adapter_reverse is not None:
-        adapters_forward = args.adapter_forward.split("-")
-        adapters_reverse = args.adapter_reverse.split("-")
+    if args.custom_adapter is not None and len(args.custom_adapter) > 0:
+        matching_sets = [Adapter(name, start_sequence=(name+"_(start)",forward), end_sequence=(name+"_(end)", reverse)) for forward, reverse, name in args.custom_adapter]
 
-        #custom names mainly to attach forward or reverse information
-        custom_names = args.custom_adapter_names.split("-")
-        
-
-        matching_sets = [Adapter('Custom Barcoding: '+name, start_sequence=('start '+name,forward), end_sequence=('end '+name, reverse)) for forward, reverse, name in zip(adapters_forward,adapters_reverse,custom_names)]
         forward_or_reverse_barcodes = None # can be ignored because we dont use barcode binning
     else:
 
@@ -66,14 +60,13 @@ def main():
 
     if matching_sets:
         check_barcodes = (args.barcode_dir is not None)
-        correct_read_direction = (args.correct_read_direction)
         find_adapters_at_read_ends(reads, matching_sets, args.verbosity, args.end_size,
                                    args.extra_end_trim, args.end_threshold,
                                    args.scoring_scheme_vals, args.print_dest, args.min_trim_size,
                                    args.threads, check_barcodes, args.barcode_threshold,
                                    args.barcode_diff, args.require_two_barcodes,
-                                   forward_or_reverse_barcodes, correct_read_direction)
-        display_read_end_trimming_summary(reads, args.verbosity, args.print_dest)
+                                   forward_or_reverse_barcodes, args.correct_read_direction)
+        display_read_end_trimming_summary(reads, args.verbosity, args.print_dest, args.head_crop, args.tail_crop, args.min_length, args.max_length)
 
         if not args.no_split:
             find_adapters_in_read_middles(reads, matching_sets, args.verbosity,
@@ -88,7 +81,7 @@ def main():
     output_reads(reads, args.format, args.output, read_type, args.verbosity,
                  args.discard_middle, args.min_split_read_size, args.print_dest,
                  args.barcode_dir, args.input, args.untrimmed, args.threads,
-                 args.discard_unassigned, args.tail_crop, args.trimmed_only, args.min_length, args.head_crop, args.max_length, correct_read_direction)
+                 args.discard_unassigned, args.tail_crop, args.trimmed_only, args.min_length, args.head_crop, args.max_length, args.correct_read_direction)
 
 
 def get_arguments():
@@ -119,15 +112,13 @@ def get_arguments():
                                  'a file and stderr if reads are printed to stdout')
     main_group.add_argument('-t', '--threads', type=int, default=default_threads,
                             help='Number of threads to use for adapter alignment')
-    main_group.add_argument('--adapter_forward', help="specific forward adapter (start of sequence); ignores the rest of the matching_sets; delimit multiple adapters with -")
-    main_group.add_argument('--adapter_reverse', help="specific reverse adapter (end of sequence); ignores the rest of the matching_sets; delimit multiple adapters with -")
-    main_group.add_argument('--custom_adapter_names', help="names to go with specific adapters; delimit multiple names with -; if name ends in rev the sequence will be reversed after cutting if --correct_read_direction is set")
+    main_group.add_argument('--custom_adapter', action='append', nargs=3, help="specify custom adapter consisting of start-adapter; end-adapter and a name.")
     main_group.add_argument('--correct_read_direction', help="tries to correct read direction", action="store_true")
-    main_group.add_argument('--trimmed_only', choices=['true','false'], default='true')
+    main_group.add_argument('--trimmed_only', action="store_true", help="using this option discards all reads that were not trimmed.")
     main_group.add_argument('--tail_crop', type=int, default=0)
     main_group.add_argument('--head_crop', type=int, default=0)
     main_group.add_argument('--min_length', type=int, default=0)
-    main_group.add_argument('--max_length', type=int, default=1000000)
+    main_group.add_argument('--max_length', type=int, default=sys.maxsize)
 
     barcode_group = parser.add_argument_group('Barcode binning settings',
                                               'Control the binning of reads based on barcodes '
@@ -174,7 +165,7 @@ def get_arguments():
                                      'be searched for adapter sequences')
     end_trim_group.add_argument('--min_trim_size', type=int, default=4,
                                 help='Adapter alignments smaller than this will be ignored')
-    end_trim_group.add_argument('--extra_end_trim', type=int, default=2,
+    end_trim_group.add_argument('--extra_end_trim', type=int, default=0,
                                 help='This many additional bases will be removed next to adapters '
                                      'found at the ends of reads')
     end_trim_group.add_argument('--end_threshold', type=float, default=75.0,
@@ -535,19 +526,25 @@ def find_adapters_at_read_ends(reads, matching_sets, verbosity, end_size, extra_
         print('', file=print_dest)
 
 
-def display_read_end_trimming_summary(reads, verbosity, print_dest):
+def display_read_end_trimming_summary(reads, verbosity, print_dest, head_crop, tail_crop, min_length, max_length):
     if verbosity < 1:
         return
     start_trim_total = sum(x.start_trim_amount for x in reads)
     start_trim_count = sum(1 if x.start_trim_amount else 0 for x in reads)
-    end_trim_count = sum(1 if x.end_trim_amount else 0 for x in reads)
     end_trim_total = sum(x.end_trim_amount for x in reads)
+    end_trim_count = sum(1 if x.end_trim_amount else 0 for x in reads)
+    cropping_total = len(reads)*tail_crop+len(reads)*head_crop
+    reversed_total = sum(1 if x.needs_reversing else 0 for x in reads)
+    discarded_total = sum(1 if min_length > len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop > max_length else 0 for x in reads)
     print(int_to_str(start_trim_count).rjust(len(int_to_str(len(reads)))) + ' / ' +
           int_to_str(len(reads)) + ' reads had adapters trimmed from their start (' +
           int_to_str(start_trim_total) + ' bp removed)', file=print_dest)
     print(int_to_str(end_trim_count).rjust(len(int_to_str(len(reads)))) + ' / ' +
           int_to_str(len(reads)) + ' reads had adapters trimmed from their end (' +
           int_to_str(end_trim_total) + ' bp removed)', file=print_dest)
+    print(str(cropping_total)+" bp are removed due to cropping.", file=print_dest)
+    print(str(reversed_total)+" sequences are reversed.", file=print_dest)
+    print(str(discarded_total)+" sequences are discarded due not meeting filter requirements", file=print_dest)
     print('\n', file=print_dest)
 
 
