@@ -44,12 +44,12 @@ class TestOneAdapterSet(unittest.TestCase):
             os.remove(self.output_file)
 
     def test_verbosity_0_output(self):
-        out, err = self.run_command('porechop -i INPUT -o OUTPUT.fastq --verbosity 0')
+        out, err = self.run_command('porechop -i INPUT -o OUTPUT.fastq --verbosity 0 --extra_end_trim 2')
         self.assertEqual(out, '')
         self.assertEqual(err, '')
 
     def test_verbosity_1_output(self):
-        out, err = self.run_command('porechop -i INPUT -o OUTPUT.fastq --verbosity 1')
+        out, err = self.run_command('porechop -i INPUT -o OUTPUT.fastq --verbosity 1 --extra_end_trim 2')
         self.assertTrue('Trimming adapters from read ends' in out)
         self.assertTrue('SQK-NSK007_Y_Top:' in out)
         self.assertTrue('SQK-NSK007_Y_Bottom:' in out)
@@ -58,7 +58,7 @@ class TestOneAdapterSet(unittest.TestCase):
         self.assertEqual(err, '')
 
     def test_verbosity_2_output(self):
-        out, err = self.run_command('porechop -i INPUT -o OUTPUT.fastq --verbosity 2')
+        out, err = self.run_command('porechop -i INPUT -o OUTPUT.fastq --verbosity 2 --extra_end_trim 2')
         self.assertTrue('Trimming adapters from read ends' in out)
         self.assertTrue('4 / 9 reads' in out)
         self.assertTrue('3 / 9 reads' in out)
@@ -68,7 +68,7 @@ class TestOneAdapterSet(unittest.TestCase):
         self.assertEqual(err, '')
 
     def test_piped_output(self):
-        out, err = self.run_command('porechop -i INPUT')
+        out, err = self.run_command('porechop -i INPUT --extra_end_trim 2')
         self.assertTrue('Trimming adapters from read ends' in err)
         self.assertTrue('SQK-NSK007_Y_Top:' in err)
         self.assertTrue('SQK-NSK007_Y_Bottom:' in err)
@@ -221,66 +221,66 @@ class TestOneAdapterSet(unittest.TestCase):
         return read_type
 
     def test_results_normal_fastq(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTQ')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'plain')
 
     def test_results_gz_fastq(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq.gz')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq.gz --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTQ')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'gz')
 
     def test_results_piped_fastq(self):
-        self.run_command('porechop -i INPUT > OUTPUT.fastq')
+        self.run_command('porechop -i INPUT > OUTPUT.fastq --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTQ')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'plain')
 
     def test_results_normal_fasta(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fasta')
+        self.run_command('porechop -i INPUT -o OUTPUT.fasta --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTA')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'plain')
 
     def test_results_gz_fasta(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fasta.gz')
+        self.run_command('porechop -i INPUT -o OUTPUT.fasta.gz --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTA')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'gz')
 
     def test_results_piped_fasta(self):
-        self.run_command('porechop -i INPUT --format fasta > OUTPUT.fasta')
+        self.run_command('porechop -i INPUT --extra_end_trim 2 --format fasta > OUTPUT.fasta')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTA')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'plain')
 
     def test_single_threaded(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --threads 1')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --threads 1 --extra_end_trim 2')
         self.check_trimmed_reads()
 
     def test_multi_threaded(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --threads 8')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --threads 8 --extra_end_trim 2')
         self.check_trimmed_reads()
 
     def test_end_size_1(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --end_size 50')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --end_size 50 --extra_end_trim 2')
         self.check_trimmed_reads()
 
     def test_end_size_2(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --end_size 100')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --end_size 100 --extra_end_trim 2')
         self.check_trimmed_reads()
 
     def test_end_size_3(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --end_size 200')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --end_size 200 --extra_end_trim 2')
         self.check_trimmed_reads()
 
     def test_min_trim_size_1(self):
         """
         Increasing this setting will filter out the adapter trimming from read 7.
         """
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_trim_size 5')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_trim_size 5 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_7 = [x for x in trimmed_reads if x[0] == '7'][0]
         self.assertEqual(read_7[0], '7')
@@ -293,7 +293,7 @@ class TestOneAdapterSet(unittest.TestCase):
             self.assertTrue(read_7[2].endswith(")('*=]++15"))
 
     def test_min_trim_size_2(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_trim_size 6')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_trim_size 6 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_7 = [x for x in trimmed_reads if x[0] == '7'][0]
         self.assertEqual(read_7[0], '7')
@@ -306,7 +306,7 @@ class TestOneAdapterSet(unittest.TestCase):
             self.assertTrue(read_7[2].endswith("+1505'+,),"))
 
     def test_min_trim_size_3(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_trim_size 7')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_trim_size 7 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_7 = [x for x in trimmed_reads if x[0] == '7'][0]
         self.assertEqual(read_7[0], '7')
@@ -319,7 +319,7 @@ class TestOneAdapterSet(unittest.TestCase):
             self.assertTrue(read_7[2].endswith("+1505'+,),"))
 
     def test_extra_middle_trim_1(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --extra_middle_trim_good_side 0'
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --extra_middle_trim_good_side 0 --extra_end_trim 2'
                          ' --extra_middle_trim_bad_side 0')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_6_1 = [x for x in trimmed_reads if x[0] == '6_1'][0]
@@ -328,7 +328,7 @@ class TestOneAdapterSet(unittest.TestCase):
         self.assertEqual(len(read_6_2[1]), 7972)
 
     def test_extra_middle_trim_2(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --extra_middle_trim_good_side 123'
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --extra_middle_trim_good_side 123 --extra_end_trim 2'
                          ' --extra_middle_trim_bad_side 456')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_6_1 = [x for x in trimmed_reads if x[0] == '6_1'][0]
@@ -341,7 +341,7 @@ class TestOneAdapterSet(unittest.TestCase):
         Read 6 has an inexact match for the start adapter, so increasing the middle_threshold
         option should prevent the split.
         """
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --middle_threshold 96')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --middle_threshold 96 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_6_1 = [x for x in trimmed_reads if x[0] == '6_1'][0]
         read_6_2 = [x for x in trimmed_reads if x[0] == '6_2'][0]
@@ -349,7 +349,7 @@ class TestOneAdapterSet(unittest.TestCase):
         self.assertEqual(len(read_6_2[1]), 7962)
 
     def test_middle_threshold_2(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq --middle_threshold 97')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --middle_threshold 97 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_6 = [x for x in trimmed_reads if x[0] == '6'][0]
         self.assertEqual(len(read_6[1]), 12000)
@@ -358,7 +358,7 @@ class TestOneAdapterSet(unittest.TestCase):
         """
         When only one read is checked, no adapters are found and nothing is trimmed.
         """
-        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 1')
+        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 1 --extra_end_trim 2')
         self.assertTrue('No adapters found' in out)
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_1 = [x for x in trimmed_reads if x[0] == '1'][0]
@@ -386,7 +386,7 @@ class TestOneAdapterSet(unittest.TestCase):
         (because the adapter in read 2 is not an exact match).
         """
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 2 '
-                                  '--adapter_threshold 100')
+                                  '--adapter_threshold 100 --extra_end_trim 2')
         self.assertTrue('No adapters found' in out)
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_2 = [x for x in trimmed_reads if x[0] == '2'][0]
@@ -397,7 +397,7 @@ class TestOneAdapterSet(unittest.TestCase):
         When the adapter threshold is lowered to 90%, Porechop finds the adapter in read 2..
         """
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 2 '
-                                  '--adapter_threshold 90')
+                                  '--adapter_threshold 90 --extra_end_trim 2')
         self.assertTrue('No adapters found' not in out)
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_2 = [x for x in trimmed_reads if x[0] == '2'][0]
@@ -435,7 +435,7 @@ class TestOneAdapterSet(unittest.TestCase):
 
     def test_min_split_read_size_1(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 1 '
-                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0')
+                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_5_1 = [x for x in trimmed_reads if x[0] == '5_1'][0]
         read_5_2 = [x for x in trimmed_reads if x[0] == '5_2'][0]
@@ -444,7 +444,7 @@ class TestOneAdapterSet(unittest.TestCase):
 
     def test_min_split_read_size_2(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 478 '
-                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0')
+                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_5_1 = [x for x in trimmed_reads if x[0] == '5_1'][0]
         read_5_2 = [x for x in trimmed_reads if x[0] == '5_2'][0]
@@ -453,7 +453,7 @@ class TestOneAdapterSet(unittest.TestCase):
 
     def test_min_split_read_size_3(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 479 '
-                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0')
+                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_5_1 = [x for x in trimmed_reads if x[0] == '5_1'][0]
         self.assertEqual(len(read_5_1[1]), 3500)
@@ -462,7 +462,7 @@ class TestOneAdapterSet(unittest.TestCase):
     def test_min_split_read_size_4(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 1 '
                                   '--extra_middle_trim_good_side 50 '
-                                  '--extra_middle_trim_bad_side 50')
+                                  '--extra_middle_trim_bad_side 50 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_5_1 = [x for x in trimmed_reads if x[0] == '5_1'][0]
         read_5_2 = [x for x in trimmed_reads if x[0] == '5_2'][0]
@@ -472,7 +472,7 @@ class TestOneAdapterSet(unittest.TestCase):
     def test_min_split_read_size_5(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 428 '
                                   '--extra_middle_trim_good_side 50 '
-                                  '--extra_middle_trim_bad_side 50')
+                                  '--extra_middle_trim_bad_side 50 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_5_1 = [x for x in trimmed_reads if x[0] == '5_1'][0]
         read_5_2 = [x for x in trimmed_reads if x[0] == '5_2'][0]
@@ -482,7 +482,7 @@ class TestOneAdapterSet(unittest.TestCase):
     def test_min_split_read_size_6(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 429 '
                                   '--extra_middle_trim_good_side 50 '
-                                  '--extra_middle_trim_bad_side 50')
+                                  '--extra_middle_trim_bad_side 50 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_5_1 = [x for x in trimmed_reads if x[0] == '5_1'][0]
         self.assertEqual(len(read_5_1[1]), 3450)
@@ -490,7 +490,7 @@ class TestOneAdapterSet(unittest.TestCase):
 
     def test_min_split_read_size_7(self):
         out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --min_split_read_size 1 '
-                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0')
+                                  '--extra_middle_trim_good_side 0 --extra_middle_trim_bad_side 0 --extra_end_trim 2')
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_9_1 = [x for x in trimmed_reads if x[0] == '9_1'][0]
         read_9_2 = [x for x in trimmed_reads if x[0] == '9_2'][0]

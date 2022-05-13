@@ -57,7 +57,7 @@ class TestBarcodes(unittest.TestCase):
         """
         Tests with default settings.
         """
-        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR')
+        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --extra_end_trim 2')
 
         self.assertEqual(self.count_output_fastq_files(), 4)
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
@@ -97,7 +97,7 @@ class TestBarcodes(unittest.TestCase):
         """
         Tests with --require_two_barcodes.
         """
-        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --require_two_barcodes')
+        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --require_two_barcodes --extra_end_trim 2')
 
         self.assertEqual(self.count_output_fastq_files(), 4)
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
@@ -137,7 +137,7 @@ class TestBarcodes(unittest.TestCase):
         """
         Tests with --untrimmed.
         """
-        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --untrimmed')
+        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --untrimmed --extra_end_trim 2')
 
         self.assertEqual(self.count_output_fastq_files(), 4)
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
@@ -177,7 +177,7 @@ class TestBarcodes(unittest.TestCase):
         """
         Tests with --discard_unassigned.
         """
-        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --discard_unassigned')
+        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --discard_unassigned --extra_end_trim 2')
 
         self.assertEqual(self.count_output_fastq_files(), 3)
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')

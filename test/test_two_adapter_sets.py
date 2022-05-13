@@ -120,19 +120,19 @@ class TestTwoAdapterSets(unittest.TestCase):
         return read_type
 
     def test_results_normal_fastq(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTQ')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'plain')
 
     def test_results_gz_fastq(self):
-        self.run_command('porechop -i INPUT -o OUTPUT.fastq.gz')
+        self.run_command('porechop -i INPUT -o OUTPUT.fastq.gz --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTQ')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'gz')
 
     def test_results_piped_fastq(self):
-        self.run_command('porechop -i INPUT > OUTPUT.fastq')
+        self.run_command('porechop -i INPUT > OUTPUT.fastq --extra_end_trim 2')
         read_type = self.check_trimmed_reads()
         self.assertEqual(read_type, 'FASTQ')
         self.assertEqual(porechop.misc.get_compression_type(self.output_file), 'plain')
@@ -141,7 +141,7 @@ class TestTwoAdapterSets(unittest.TestCase):
         """
         When only one read is checked, no adapters are found and nothing is trimmed.
         """
-        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 1')
+        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 1 --extra_end_trim 2')
         self.assertTrue('No adapters found' in out)
         trimmed_reads, read_type = self.load_trimmed_reads()
         read_1 = [x for x in trimmed_reads if x[0] == '1'][0]
@@ -155,7 +155,7 @@ class TestTwoAdapterSets(unittest.TestCase):
         """
         When only two reads are checked, only one adapter set is found.
         """
-        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 2')
+        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 2 --extra_end_trim 2')
         self.assertTrue('Trimming adapters' in out)
         self.assertTrue('SQK-MAP006_Y_Top_SK63:' in out)
         self.assertTrue('SQK-MAP006_Y_Bottom_SK64:' in out)
@@ -171,7 +171,7 @@ class TestTwoAdapterSets(unittest.TestCase):
         """
         When three reads are checked, both adapter sets are found.
         """
-        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 3')
+        out, _ = self.run_command('porechop -i INPUT -o OUTPUT.fastq --check_reads 3 --extra_end_trim 2')
         self.assertTrue('Trimming adapters' in out)
         self.assertTrue('SQK-MAP006_Y_Top_SK63:' in out)
         self.assertTrue('SQK-MAP006_Y_Bottom_SK64:' in out)

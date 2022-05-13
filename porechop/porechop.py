@@ -535,7 +535,7 @@ def display_read_end_trimming_summary(reads, verbosity, print_dest, head_crop, t
     end_trim_count = sum(1 if x.end_trim_amount else 0 for x in reads)
     cropping_total = len(reads)*tail_crop+len(reads)*head_crop
     reversed_total = sum(1 if x.needs_reversing else 0 for x in reads)
-    discarded_total = sum(1 if min_length > len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop > max_length else 0 for x in reads)
+    discarded_total = sum(1 if min_length > len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop and len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop > max_length else 0 for x in reads)
     print(int_to_str(start_trim_count).rjust(len(int_to_str(len(reads)))) + ' / ' +
           int_to_str(len(reads)) + ' reads had adapters trimmed from their start (' +
           int_to_str(start_trim_total) + ' bp removed)', file=print_dest)
