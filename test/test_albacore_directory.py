@@ -56,7 +56,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
         """
         out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR',
                                   'test_albacore_directory/workspace/barcode01/' +
-                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq')
+                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq --extra_end_trim 2')
 
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
         bc03_trimmed_reads = self.load_trimmed_reads('BC03.fastq')
@@ -83,7 +83,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
         """
         out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR',
                                   'test_albacore_directory/workspace/barcode02/' +
-                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq')
+                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq --extra_end_trim 2')
 
         bc02_trimmed_reads = self.load_trimmed_reads('BC02.fastq')
         bc03_trimmed_reads = self.load_trimmed_reads('BC03.fastq')
@@ -108,7 +108,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
         """
         out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR',
                                   'test_albacore_directory/workspace/barcode03/' +
-                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq')
+                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq --extra_end_trim 2')
 
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
         bc03_trimmed_reads = self.load_trimmed_reads('BC03.fastq')
@@ -121,6 +121,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
         self.assertEqual(bc01_read_names, ['283ab5e9-492e-4b28-a200-0362b4755ced'])
         self.assertEqual(bc03_read_names, ['47277a55-611f-415e-b0d4-3d3326e0e125',
                                            '73d0e477-fbfe-49c2-abc9-4974dd765bc8',
+                                           '7da83605-ace3-45db-bb61-05bebf640e70',
                                            'd75205b6-be37-4a5c-bed3-d6b218e7579b'])
         self.assertEqual(none_read_names, ['618187f9-2f66-4bf0-a1b6-e735b7024e86',
                                            '6f612e35-8174-4dc9-a239-503b10915267',
@@ -134,7 +135,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
         """
         out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR',
                                   'test_albacore_directory/workspace/unclassified/' +
-                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq')
+                                  'fastq_runid_e1df3d311cc267665db81df4aa863d073b0494ae_0.fastq --extra_end_trim 2')
 
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
         bc02_trimmed_reads = self.load_trimmed_reads('BC02.fastq')
@@ -152,14 +153,15 @@ class TestAlbacoreDirectory(unittest.TestCase):
         self.assertEqual(bc03_read_names, ['7557893f-a3a1-4294-96b7-89f9e9d4470c'])
         self.assertEqual(none_read_names, ['4d1ff7d1-b2f1-4ecc-8990-09edf0aa1970',
                                            '5e656a69-bd50-45c9-8177-a2aa38d0b04f',
-                                           '7680810e-db1f-4cde-b442-642d7ac024ca'])
+                                           '7680810e-db1f-4cde-b442-642d7ac024ca',
+                                           '8cb0f367-8852-4796-9ecd-823d5da1d865'])
 
     def test_albacore_directory_all(self):
         """
         When the whole directory is given as input, it's treated as an Albacore directory and reads
         where Porechop and Albacore disagree are put into 'none'.
         """
-        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR', 'test_albacore_directory')
+        out, _ = self.run_command('porechop -i INPUT -b BARCODE_DIR --extra_end_trim 2', 'test_albacore_directory')
 
         bc01_trimmed_reads = self.load_trimmed_reads('BC01.fastq')
         bc02_trimmed_reads = self.load_trimmed_reads('BC02.fastq')
@@ -179,6 +181,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
                                            '4dd6464b-5cea-4f3a-8f26-740983ca2a57'])
         self.assertEqual(bc03_read_names, ['47277a55-611f-415e-b0d4-3d3326e0e125',
                                            '73d0e477-fbfe-49c2-abc9-4974dd765bc8',
+                                           '7da83605-ace3-45db-bb61-05bebf640e70',
                                            'd75205b6-be37-4a5c-bed3-d6b218e7579b'])
         self.assertEqual(none_read_names, ['04a00c9c-4a3a-4ba6-8161-ba01d9a77f22',
                                            '111fc53c-1941-4c5b-82e2-c80dc0962bd7',
@@ -192,6 +195,7 @@ class TestAlbacoreDirectory(unittest.TestCase):
                                            '6f612e35-8174-4dc9-a239-503b10915267',
                                            '7557893f-a3a1-4294-96b7-89f9e9d4470c',
                                            '7680810e-db1f-4cde-b442-642d7ac024ca',
+                                           '8cb0f367-8852-4796-9ecd-823d5da1d865',
                                            '9dc8c47d-e574-497b-b24d-5cf8f09cb189',
                                            'a7ffe707-2733-43b9-a9df-950566189723',
                                            'b8db6753-a98a-40c3-8f80-aadedcf4d1e4',
