@@ -236,7 +236,7 @@ The same colour scheme is used for middle adapters, but only reads with a positi
 
 ### Cropping and Filtering
 
-Previously it was only possible to cut additional bases from the end of the sequence with the `--extra-end-trim` Parameter. The new options `--head_crop` resp. `--tail_crop` lets you specify the amount of additional bases that should be cut from start resp. end of the sequence after trimming. Currently this is additionally to the existing `--extra-end-trim` Parameter for the end of the sequence. The Default for the `--extra-end-trim` was changed from 2 to 0. Middle adapters are unaffected by this.
+Previously it was only possible to cut additional bases from the end of the sequence with the `--extra-end-trim` Parameter. The new options `--head_crop` resp. `--tail_crop` lets you specify the amount of additional bases that should be cut from start resp. end of the sequence after trimming. Currently this is additionally to the existing `--extra-end-trim` Parameter for the end of the sequence. The Default for the `--extra-end-trim` was changed from 2 to 0. Middle adapters *are* affected by this.
 
 With the options `--min_length` resp. `--max_length` you can specify to only keep sequences (after trimming and cropping) that are at least `--min_length` long resp. at most `--max-length` long. Sequences not satisfying these restrictions are discarded. Middle adapters *are* affected by this.
 
@@ -250,7 +250,7 @@ Using this disables Porechops automatic adapter search.
 
 ### Reversing sequences
 
-(Not checked with the hardcoded adapters.)
+(Not checked with the hardcoded adapters. Does not work for sequences having middle adapters)
 If your custom adapters name for an adapter ends in *reverse* it is marked as being the reverse read. Using the option `correct_read_direction` Porechop will save the reverse complement of the trimmed sequence.
 
 
@@ -306,7 +306,7 @@ Main options:
   --custom_adapter START_ADAPTER END_ADAPTER NAME
                                  specify custom adapter consisting of start-adapter; end-adapter and a name.
 
-  --correct_read_direction       tries to correct read direction for reverse reads. [ONLY IF custom_adapter name ends in 'rev']
+  --correct_read_direction       tries to correct read direction for reverse reads. [ONLY IF custom_adapter name ends in 'reverse' and does not work for sequences containing middle adapters]
 
   --trimmed_only                 using this option discards all reads that were not trimmed
 

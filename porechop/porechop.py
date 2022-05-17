@@ -66,7 +66,7 @@ def main():
                                    args.threads, check_barcodes, args.barcode_threshold,
                                    args.barcode_diff, args.require_two_barcodes,
                                    forward_or_reverse_barcodes, args.correct_read_direction)
-        display_read_end_trimming_summary(reads, args.verbosity, args.print_dest, args.head_crop, args.tail_crop, args.min_length, args.max_length)
+        display_read_end_trimming_summary(reads, args.verbosity, args.print_dest, args.head_crop, args.tail_crop, args.min_length, args.max_length, args.trimmed_only)
 
         if not args.no_split:
             find_adapters_in_read_middles(reads, matching_sets, args.verbosity,
@@ -113,7 +113,7 @@ def get_arguments():
     main_group.add_argument('-t', '--threads', type=int, default=default_threads,
                             help='Number of threads to use for adapter alignment')
     main_group.add_argument('--custom_adapter', action='append', nargs=3, help="specify custom adapter consisting of start-adapter; end-adapter and a name.")
-    main_group.add_argument('--correct_read_direction', help="tries to correct read direction", action="store_true")
+    main_group.add_argument('--correct_read_direction', help="tries to correct read direction (does not work for sequences with middle adapters)", action="store_true")
     main_group.add_argument('--trimmed_only', action="store_true", help="using this option discards all reads that were not trimmed.")
     main_group.add_argument('--tail_crop', type=int, default=0)
     main_group.add_argument('--head_crop', type=int, default=0)
@@ -526,7 +526,7 @@ def find_adapters_at_read_ends(reads, matching_sets, verbosity, end_size, extra_
         print('', file=print_dest)
 
 
-def display_read_end_trimming_summary(reads, verbosity, print_dest, head_crop, tail_crop, min_length, max_length):
+def display_read_end_trimming_summary(reads, verbosity, print_dest, head_crop, tail_crop, min_length, max_length, trimmed_only):
     if verbosity < 1:
         return
     start_trim_total = sum(x.start_trim_amount for x in reads)
@@ -535,16 +535,16 @@ def display_read_end_trimming_summary(reads, verbosity, print_dest, head_crop, t
     end_trim_count = sum(1 if x.end_trim_amount else 0 for x in reads)
     cropping_total = len(reads)*tail_crop+len(reads)*head_crop
     reversed_total = sum(1 if x.needs_reversing else 0 for x in reads)
-    discarded_total = sum(1 if min_length > len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop and len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop > max_length else 0 for x in reads)
+    discarded_total = sum(1 if min_length > len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop or len(x.seq)-x.start_trim_amount-x.end_trim_amount-head_crop-tail_crop > max_length or (len(x.seq)-x.start_trim_amount-x.end_trim_amount == len(x.seq) and trimmed_only) else 0 for x in reads)
     print(int_to_str(start_trim_count).rjust(len(int_to_str(len(reads)))) + ' / ' +
           int_to_str(len(reads)) + ' reads had adapters trimmed from their start (' +
           int_to_str(start_trim_total) + ' bp removed)', file=print_dest)
     print(int_to_str(end_trim_count).rjust(len(int_to_str(len(reads)))) + ' / ' +
           int_to_str(len(reads)) + ' reads had adapters trimmed from their end (' +
           int_to_str(end_trim_total) + ' bp removed)', file=print_dest)
-    print(str(cropping_total)+" bp are removed due to cropping.", file=print_dest)
-    print(str(reversed_total)+" sequences are reversed.", file=print_dest)
-    print(str(discarded_total)+" sequences are discarded due not meeting filter requirements", file=print_dest)
+    print(str(cropping_total)+" bp are removed due to cropping. (Might be more if sequences contain middle adapters)", file=print_dest)
+    print(str(reversed_total)+" sequences are reversed. (Sequences containing middle adapters won't be reversed)", file=print_dest)
+    print(str(discarded_total)+" sequences are discarded due not meeting filter requirements. (This includes sequences containing middle adapters)", file=print_dest)
     print('\n', file=print_dest)
 
 
